@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Saisie Forum Handidéal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Concept : saisie guidée sur tablette, un écran par étape (participant, choix du prototype, questions, suite). Typographie lisible, grandes zones tactiles. */
+:root{
+  --bg:#F3F4F7; --surface:#FFFFFF; --fg:#1D2130; --muted:#5A6073; --line:#C9CDD8;
+  --primary:#2B3040; --on-primary:#FFFFFF; --accent:#B35F00; --accent-soft:#FDF1E0;
+  --ok:#1F7A3D; --warn:#9A5B00; --focus:#0B5FD7;
+  --font:'Atkinson Hyperlegible',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#13151C; --surface:#1D2029; --fg:#EEF0F6; --muted:#A5ABBD; --line:#3A3F50;
+  --primary:#F28C00; --on-primary:#13151C; --accent:#F5A53A; --accent-soft:#2A2418;
+  --ok:#5BC37D; --warn:#F5B85A; --focus:#7DB1FF; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#13151C; --surface:#1D2029; --fg:#EEF0F6; --muted:#A5ABBD; --line:#3A3F50;
+  --primary:#F28C00; --on-primary:#13151C; --accent:#F5A53A; --accent-soft:#2A2418;
+  --ok:#5BC37D; --warn:#F5B85A; --focus:#7DB1FF; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:18px;line-height:1.45;
+  padding-block:0 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:860px;margin:0 auto}
+header.top{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;padding:18px 0 14px;border-bottom:2px solid var(--line);margin-bottom:22px}
+.brand{font-weight:700;font-size:1.05rem;letter-spacing:.01em}
+.brand small{display:block;font-weight:400;color:var(--muted);font-size:.85rem}
+.chip{display:inline-flex;align-items:center;gap:10px;background:var(--surface);border:2px solid var(--line);border-radius:999px;padding:6px 8px 6px 16px;font-weight:700}
+.chip button{min-height:40px;padding:0 16px}
+.mock{background:var(--accent-soft);border-left:6px solid var(--accent);padding:10px 14px;margin:0 0 22px;font-size:.92rem;border-radius:4px}
+h1{font-size:1.9rem;line-height:1.2;margin:0 0 6px;text-wrap:balance}
+h2{font-size:1.3rem;margin:0 0 10px}
+.lead{color:var(--muted);margin:0 0 22px}
+section.card{background:var(--surface);border:2px solid var(--line);border-radius:10px;padding:20px;margin:0 0 20px}
+label.f{display:block;font-weight:700;margin:0 0 8px}
+input[type=text],input[type=number],textarea,select{font:inherit;color:var(--fg);background:var(--bg);border:2px solid var(--line);border-radius:8px;padding:12px 14px;width:100%;min-height:52px}
+textarea{min-height:130px;resize:vertical}
+input.num{font-size:1.6rem;font-weight:700;letter-spacing:.08em;max-width:240px;text-transform:uppercase}
+:focus-visible{outline:4px solid var(--focus);outline-offset:2px}
+button{font:inherit;cursor:pointer;border-radius:8px;border:2px solid var(--primary);background:var(--surface);color:var(--fg);min-height:52px;padding:0 22px;font-weight:700}
+button.primary{background:var(--primary);color:var(--on-primary)}
+button.ghost{border-color:var(--line);font-weight:400}
+button:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.err{color:var(--warn);font-weight:700;margin:8px 0 0}
+.ok{color:var(--ok);font-weight:700}
+/* options */
+.opts{display:flex;flex-wrap:wrap;gap:10px}
+.opt{position:relative}
+.opt input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.opt span{display:flex;align-items:center;justify-content:center;text-align:center;min-height:52px;min-width:96px;padding:8px 18px;border:2px solid var(--line);border-radius:8px;background:var(--bg);font-weight:700}
+.opt input:checked+span{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.opt input:focus-visible+span{outline:4px solid var(--focus);outline-offset:2px}
+.opt input[type=checkbox]:checked+span::before{content:"\2713\00a0"}
+.q{padding:16px 0;border-top:1px solid var(--line)}
+.q:first-of-type{border-top:0;padding-top:0}
+.q>.t{font-weight:700;margin:0 0 10px}
+.q>.h{color:var(--muted);font-size:.9rem;margin:-6px 0 10px}
+.scalerow{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:10px 18px;align-items:center;padding:12px 0;border-top:1px dashed var(--line)}
+.scalerow:first-of-type{border-top:0}
+.scalerow .opts{flex-wrap:nowrap}
+.scalerow .opt{flex:1}
+.scalerow .opt span{min-width:0;padding:8px 6px}
+.mrow{padding:12px 0;border-top:1px dashed var(--line)}
+.mrow:first-of-type{border-top:0}
+.mcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.mcols .c{font-size:.9rem;color:var(--muted);margin:0 0 4px;font-weight:700}
+.opts.tight{flex-wrap:nowrap}.opts.tight .opt{flex:1}.opts.tight .opt span{min-width:0;padding:8px 4px}
+.timing{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(4,minmax(0,1fr));gap:8px;align-items:end}
+.timing .hd{font-size:.82rem;color:var(--muted);font-weight:700}
+.timing input,.timing select{min-height:46px;padding:8px 10px}
+.hubgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.proto{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;min-height:112px;padding:14px 16px;background:var(--surface);border:2px solid var(--line);width:100%}
+.proto:hover{border-color:var(--primary)}
+.proto .n{font-size:.85rem;color:var(--accent);letter-spacing:.04em;text-transform:uppercase}
+.proto .tt{font-size:1.1rem;font-weight:700}
+.proto.done{border-color:var(--ok)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:10px 0;margin-bottom:10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.bar .prog{color:var(--muted);font-size:.95rem}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+.tw{overflow-x:auto}
+pre.csv{background:var(--bg);border:2px solid var(--line);border-radius:8px;padding:12px;max-height:220px;overflow:auto;font-size:.8rem;white-space:pre}
+.bigchoice{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.bigchoice button{min-height:96px;font-size:1.15rem;text-align:left;padding:14px 18px}
+.bigchoice button small{display:block;font-weight:400;color:var(--muted);margin-top:4px}
+.bigchoice button.primary small{color:inherit;opacity:.85}
+@media(max-width:560px){body{font-size:17px}.scalerow{grid-template-columns:1fr}.timing{grid-template-columns:1fr 1fr}.timing .hd{display:none}.timing .fmt{grid-column:1/-1;font-weight:700}}
+@media(prefers-reduced-motion:no-preference){button,.opt span{transition:background .12s,border-color .12s}}
+
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tabs button{min-height:46px;padding:0 18px;border-color:var(--line);font-weight:700}
+.tabs button[aria-current=page]{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.roleinfo{color:var(--muted);font-size:.9rem;margin:-8px 0 18px}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;max-height:300px;overflow:auto;padding:4px}
+.pchip{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:68px;padding:6px 8px;background:var(--bg);border:2px solid var(--line);font-weight:700}
+.pchip small{font-weight:400;color:var(--muted);font-size:.8rem}
+.pchip[aria-pressed=true]{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.pchip[aria-pressed=true] small{color:inherit;opacity:.85}
+.toast{background:var(--surface);border:2px solid var(--ok);border-left-width:8px;border-radius:8px;padding:12px 16px;margin:0 0 20px;font-weight:700}
+.proto:disabled{opacity:.5;cursor:not-allowed}
+.overlay{position:fixed;inset:0;background:rgba(10,12,18,.62);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.dlg{background:var(--surface);color:var(--fg);border:3px solid var(--warn);border-radius:12px;max-width:520px;width:100%;padding:22px}
+.dlg h2{margin:0 0 8px}
+.pilltag{display:inline-block;border:2px solid var(--line);border-radius:999px;padding:2px 12px;font-size:.88rem;margin:2px 6px 2px 0;background:var(--bg)}
+.timing{grid-template-columns:minmax(0,1.3fr) repeat(5,minmax(0,1fr))}
+@media(max-width:560px){.timing{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="brand">Bus Handidéal<small>Forum les Accessibles, 20 et 21 novembre 2026</small></div>
+  <nav class="tabs" id="nav" aria-label="Rôle"></nav>
+</header>
+<main id="app" aria-live="polite"></main>
+</div>
+<script>
+/* ---------- Questionnaires (alignés sur les versions Word du 18 nov.) ---------- */
+const OUI3=['Oui','Un peu','Non'], OPN=['Oui','Peut-être','Non'];
+const USE={id:'usage',type:'single',q:'Utiliseriez-vous ce prototype dans le bus ?',opts:OPN};
+const QS=[
+{id:'P1',num:'1',titre:'Boîtier de commande',note:'Boutons pour demander un arrêt, de l’aide ou la rampe.',
+ hint:'Pourquoi cette version, à quoi sert chaque bouton selon la personne, bouton manquant ou prêtant à confusion (lequel), signal préféré (autre), remarque par emplacement, ce qui gêne sur la version mobile, ce qu’elle a le plus aimé, ce qu’il faut changer.',
+ items:[
+ {id:'versions',type:'multi',q:'Versions du boîtier testées',opts:['Version A (en anneau, 7 boutons)','Version B (allongée, gros boutons)','Version C (en deux rangées, 8 boutons)']},
+ {id:'aspect',type:'matrix',q:'L’aspect et les boutons (laisser vide si la version n’a pas été testée)',cols:['Version A','Version B','Version C'],opts:OUI3,
+  rows:['Les pictogrammes sont faciles à voir (couleurs, contraste)','Les dessins sur les boutons sont faciles à comprendre','La taille des boutons est bien pour appuyer','Je peux appuyer sur le bon bouton sans me tromper','J’aime l’aspect du boîtier']},
+ {id:'pref',type:'single',q:'Quelle version préférez-vous ?',opts:['Version A','Version B','Version C','Aucune','Je ne sais pas']},
+ {id:'num',type:'single',q:'Une version numérique (à utiliser sur smartphone) serait-elle une option convenable ?',opts:['Oui','Non']},
+ {id:'num2',type:'single',optional:true,q:'Si oui : physique et numérique en complément, ou uniquement numérique ?',opts:['Physique et numérique','Uniquement numérique']},
+ {id:'utile',type:'scale',q:'Chaque bouton est-il utile ?',opts:['Oui','Non'],
+  rows:['Vert : personne assise avec une horloge','Jaune : main qui appuie sur « STOP »','Rouge : personne qui lève le bras','Bleu clair : rampe d’accès','Violet : main, validation, téléphone ou carte','Rose ou bleu foncé : fauteuil roulant','Vert avec une coche','Rouge avec une croix']},
+ {id:'top3',type:'multi',max:3,q:'Les 3 fonctions les plus importantes (3 au maximum)',opts:['Vert : horloge','Jaune : STOP','Rouge : personne qui lève le bras','Bleu clair : rampe','Violet : validation, téléphone ou carte','Fauteuil roulant','Vert avec une coche','Rouge avec une croix']},
+ {id:'manque',type:'single',q:'Il manque un bouton ?',opts:['Non','Oui']},
+ {id:'confus',type:'single',q:'Un bouton est inutile ou prête à confusion ?',opts:['Non','Oui']},
+ {id:'led',type:'single',q:'Une lumière (LED) qui s’allume est-elle utile pour savoir que la demande est envoyée ?',opts:['Oui','Non','Sans avis']},
+ {id:'signal',type:'single',q:'Quel signal préférez-vous ?',opts:['Lumière','Son','Vibration','Autre']},
+ {id:'empl',type:'scale',optional:true,q:'Emplacement : facile à atteindre ? (laisser vide si non testé)',opts:['Oui','Moyen','Non'],
+  rows:['Place pour fauteuil roulant (UFR)','Emplacement PMR / PSH','Version mobile, non fixée']},
+ {id:'ou',type:'single',q:'Où voudriez-vous trouver le boîtier dans le bus ?',opts:['Fixé à côté de la place','Mobile, que l’on tient','Autre']},
+ {id:'phone',type:'matrix',q:'Interface sur smartphone (si essayée)',cols:['Interface 1','Interface 2'],opts:OUI3,
+  rows:['L’écran est facile à lire (taille, contraste)','Les boutons sont faciles à toucher','C’est facile à utiliser']},
+ {id:'prefphone',type:'single',q:'Que préférez-vous ?',opts:['Le boîtier','Le smartphone','Les deux','Je ne sais pas']},
+ {id:'charge',type:'single',q:'Dans le bus, auriez-vous votre smartphone avec vous et chargé ?',opts:['Oui','Parfois','Non']},
+ USE],
+ anim:[{id:'empltest',type:'multi',q:'Emplacement(s) testé(s)',opts:['UFR','PMR / PSH','Mobile']}]},
+{id:'P2',num:'2',titre:'Emplacement spécifique',note:'Repérer la place spécifique et s’y installer.',
+ hint:'Ce qui aide, ce qui gêne, ce que la personne a le plus aimé, ce qu’il faut changer ou ajouter.',
+ items:[
+ {id:'avis',type:'scale',q:'Votre avis sur le prototype',opts:OUI3,rows:['Je repère facilement la place','La place est facile d’accès','Je m’installe facilement sur la place','Il y a assez d’espace pour moi (et mon aide, mon chien)','Je me sens en sécurité sur cette place']},
+ {id:'avec',type:'multi',q:'La personne s’est installée avec',opts:['Canne','Déambulateur','Chien guide ou d’assistance','Sans aide']},
+ {id:'ou',type:'single',q:'Où voudriez-vous cette place dans le bus ?',opts:['Près de la porte','Au milieu','Peu importe']},
+ USE]},
+{id:'P31',num:'3.1',titre:'Signalétique avec pictogrammes',note:'Trois essais sur la ligne T1a : pictogrammes seuls, noms seuls, pictogramme + nom.',
+ hint:'Les 3 pictogrammes jugés les plus adaptés (arrêts 1, 2, 3), un pictogramme pas clair et pourquoi, ce que la personne a le plus aimé, ce qu’il faut changer ou ajouter.',
+ items:[
+ {id:'avis',type:'scale',q:'Votre avis sur le prototype',opts:OUI3,rows:['Les pictogrammes sont faciles à distinguer les uns des autres','Les pictogrammes sont faciles à voir (taille, contraste)','Je peux préparer mon trajet sans lire','Avec les pictogrammes seuls, j’ai facilement trouvé mes arrêts','Avec les noms seuls, j’ai facilement trouvé mes arrêts','Avec le pictogramme + le nom, j’ai facilement trouvé mes arrêts','Je saurais où descendre grâce aux pictogrammes']},
+ {id:'plus',type:'single',q:'Avec quelle façon de lire les arrêts êtes-vous le plus à l’aise ?',opts:['Pictogrammes seuls','Noms seuls','Pictogramme + nom','Pas de différence']},
+ {id:'moins',type:'single',q:'Et avec laquelle êtes-vous le moins à l’aise ?',opts:['Pictogrammes seuls','Noms seuls','Pictogramme + nom','Pas de différence']},
+ USE],
+ anim:[{id:'chrono',type:'timing',q:'Temps pour trouver chaque arrêt sur le plan (en secondes, depuis la consigne)',rows:['P : pictogrammes seuls (T1)','N : noms seuls (T2)','PN : pictogramme + nom (T3)']}]},
+{id:'P32',num:'3.2',titre:'Tableau de langage assisté',note:'Montrer du doigt une image de la grille pour dire ce que l’on veut.',
+ hint:'Images ou phrases qui manquent, ce que la personne a le plus aimé, ce qu’il faut changer ou ajouter.',
+ items:[
+ {id:'avis',type:'scale',q:'Votre avis sur le prototype',opts:OUI3,rows:['Les images sont claires','Je trouve vite l’image que je cherche','Je peux dire ce que je veux avec cette grille','La grille est facile à montrer au conducteur','Je pense que le conducteur me comprendrait']},
+ {id:'comm',type:'multi',q:'Aujourd’hui, comment parlez-vous au conducteur ?',opts:['Je parle','Gestes','Papier, carte','Tablette ou application','Je ne communique pas']},
+ USE]},
+{id:'P4',num:'4',titre:'Indicateur de souplesse de conduite',note:'Écouter les explications et essayer l’application (Accélération, Freinage, Virage, Envoyer).',
+ hint:'Ce que la personne a le plus aimé, ce qu’il faut changer ou ajouter.',
+ items:[
+ {id:'avis',type:'scale',q:'Votre avis sur le prototype',opts:OUI3,rows:['Je comprends à quoi sert l’application','Les boutons Accélération, Freinage et Virage sont clairs','Je peux signaler un moment d’inconfort sans difficulté','Le texte et les boutons sont faciles à lire','Envoyer mes réponses est facile']},
+ {id:'peur',type:'single',q:'Dans le bus, avez-vous déjà eu peur ou été gêné par un mouvement ?',opts:['Souvent','Parfois','Jamais']},
+ {id:'moments',type:'multi',q:'Dans quels moments ?',opts:['Accélération','Freinage','Virage']},
+ {id:'signaler',type:'single',q:'Signaleriez-vous pendant un vrai trajet ?',opts:OPN},
+ USE]},
+{id:'P5',num:'5',titre:'Identification des handicaps invisibles',note:'Découvrir les produits Tournesol et essayer de se signaler.',
+ hint:'Quel produit regardé ou préféré, ce qui mettrait mal à l’aise, ce que la personne a le plus aimé, ce qu’il faut changer ou ajouter.',
+ items:[
+ {id:'avis',type:'scale',q:'Votre avis sur le prototype',opts:OUI3,rows:['Je comprends à quoi sert le tournesol','Se signaler avec ce produit est simple','Je me sens à l’aise pour me signaler','Le tournesol est facile à voir pour le conducteur','Je ne me sens pas mis à part']},
+ {id:'comment',type:'single',q:'Comment voudriez-vous vous signaler ?',opts:['Objet porté (badge, cordon…)','Sur téléphone','Bouton du boîtier','En parlant au conducteur']},
+ USE]},
+{id:'P6',num:'6',titre:'Signalisation du remplissage',note:'Regarder les informations sur le remplissage et dire si l’on monte ou si l’on attend le suivant.',
+ hint:'Ce qui n’est pas clair, ce que la personne a le plus aimé, ce qu’il faut changer ou ajouter.',
+ items:[
+ {id:'avis',type:'scale',q:'Votre avis sur le prototype',opts:OUI3,rows:['L’information est claire','L’information est facile à trouver','Je comprends si les places fauteuil roulant sont libres','Je comprends si les places prioritaires sont libres','Cette information m’aide à décider de monter ou non']},
+ {id:'decision',type:'single',q:'Avec cette information, la personne',opts:['Monte dans ce bus','Attend le suivant']},
+ {id:'ou',type:'single',q:'Où voudriez-vous voir cette information ?',opts:['À l’arrêt','Sur le bus, à l’extérieur','Sur téléphone','Autre']},
+ USE]},
+{id:'P7',num:'7',titre:'Fixation du fauteuil roulant',note:'S’installer avec son fauteuil sur la place prévue et fixer le fauteuil.',
+ hint:'Ce qui est difficile ou gênant, ce que la personne a le plus aimé, ce qu’il faut changer ou ajouter.',
+ items:[
+ {id:'avis',type:'scale',q:'Votre avis sur le prototype',opts:OUI3,rows:['Je trouve facilement où fixer mon fauteuil','Je peux fixer mon fauteuil facilement','Je peux le faire sans aide','Je me sens en sécurité avec ce système','C’est assez rapide']},
+ {id:'type',type:'single',q:'Quel fauteuil a été utilisé ?',opts:['Manuel','Électrique','Autre']},
+ {id:'temps',type:'single',q:'Combien de temps pour s’installer ?',opts:['Moins d’1 minute','1 à 3 minutes','Plus de 3 minutes']},
+ {id:'aide',type:'single',q:'Qui a aidé ?',opts:['Personne','Le conducteur','Un proche']},
+ USE]}
+];
+/* Informations sur la personne : saisies une seule fois, à l'accueil */
+const PROFIL=[
+ {id:'statut',q:'La personne est',opts:['Usager du bus','Proche, aidant','Pro. de santé','Pro. du transport','Autre'],multi:false},
+ {id:'depl',q:'Pour se déplacer, elle (ou la personne concernée) utilise',opts:['Fauteuil roulant','Canne','Déambulateur','Rien de particulier','Autre'],multi:true},
+ {id:'bus',q:'Elle prend le bus',opts:['Souvent','Parfois','Jamais'],multi:false},
+ {id:'essais',q:'Souhaite participer aux essais dans le bus',opts:['Oui','Non'],multi:false},
+ {id:'etude',q:'Souhaite réaliser ses propres acquisitions (prototype 4)',opts:['Oui','Non'],multi:false}];
+
+
+/* ---------- Configuration Supabase (à renseigner, voir le guide) ---------- */
+const SUPABASE_URL='https://crnbixqyjzgmageheizt.supabase.co';
+const SUPABASE_KEY='sb_publishable_fvSQOvj33AVlCgFcypuXJA_ZCFYbteR';
+
+/* ---------- Accès à la base (fonctions RPC, voir supabase_setup.sql) ---------- */
+let CODE='', ROLE='';
+try{CODE=sessionStorage.getItem('hd_code')||'';ROLE=sessionStorage.getItem('hd_role')||''}catch(e){}
+async function api(fn,args){
+  const h={'apikey':SUPABASE_KEY,'Content-Type':'application/json'};
+  if(SUPABASE_KEY.startsWith('eyJ')) h['Authorization']='Bearer '+SUPABASE_KEY;
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:h,body:JSON.stringify(args)});
+  if(!r.ok){let m='';try{m=(await r.json()).message||''}catch(e){} const e=new Error(m||('Erreur '+r.status));e.status=r.status;throw e}
+  const t=await r.text(); return t?JSON.parse(t):null;
+}
+/* File d'attente locale : une saisie n'est jamais perdue si le réseau coupe */
+const QKEY='hd_queue_v1';
+function getQ(){try{return JSON.parse(localStorage.getItem(QKEY)||'[]')}catch(e){return []}}
+function setQ(q){try{localStorage.setItem(QKEY,JSON.stringify(q))}catch(e){}}
+async function flush(){
+  let q=getQ(), sent=0, last='';
+  for(const it of [...q]){
+    try{await api('submit_reponse',it.args); q=getQ().filter(x=>x.id!==it.id); setQ(q); sent++}
+    catch(e){ if(e.status===undefined) {last='réseau indisponible';break} last=e.message; it.err=e.message; setQ(getQ().map(x=>x.id===it.id?it:x)) }
+  }
+  return {sent,left:getQ().length,last};
+}
+
+/* ---------- État ---------- */
+let S={tab:'anim',view:'home',pid:null,qid:null,ans:{},comment:'',aide:'',jour:'',obs:'',warned:false,toast:'',filter:'',editPid:null,
+  parts:null,adminParts:null,loading:false,err:'',gateErr:'',busy:false};
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const app=$('#app');
+const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16)}));
+function doneFor(pid){
+  const base=(S.parts||[]).find(p=>p.numero===pid)?.done||[];
+  const pend=getQ().filter(i=>i.args.p_participant===pid).map(i=>i.args.p_questionnaire);
+  return new Set([...base,...pend]);
+}
+const errText=e=>e.status===undefined?'Pas de connexion au serveur.':(e.status===403||e.status===401?'Code refusé.':e.message);
+
+function renderNav(){
+  const nav=$('#nav');
+  if(!ROLE){nav.innerHTML='';return}
+  const items=[['anim','Animateur']]; if(ROLE==='admin') items.push(['accueil','Accueil (admin)'],['data','Données']);
+  const pend=getQ().length;
+  nav.innerHTML=items.map(([k,l])=>`<button data-t="${k}" ${S.tab===k?'aria-current="page"':''}>${l}</button>`).join('')
+    +(pend?`<button id="sync" title="Envoyer les saisies en attente">En attente : ${pend}</button>`:'')
+    +`<button class="ghost" id="out">Quitter</button>`;
+  nav.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;if(S.tab==='anim')S.view='home';S.toast='';render();window.scrollTo(0,0)});
+  const sy=$('#sync'); if(sy) sy.onclick=async()=>{sy.disabled=true;const r=await flush();S.toast=r.left?`${r.left} saisie(s) toujours en attente (${r.last||'à renvoyer'}).`:`${r.sent} saisie(s) envoyée(s).`;await loadParts();render()};
+  $('#out').onclick=()=>{CODE='';ROLE='';try{sessionStorage.clear()}catch(e){}S.parts=null;S.adminParts=null;render()};
+}
+function optHTML(name,opts,type,checked,extraCls='',disabledSet){
+  return `<div class="opts ${extraCls}">`+opts.map(o=>{
+    const c=Array.isArray(checked)?checked.includes(o):checked===o;
+    const dis=disabledSet&&disabledSet.has(o)?'disabled':'';
+    return `<label class="opt"><input type="${type}" name="${esc(name)}" value="${esc(o)}" ${c?'checked':''} ${dis}><span>${esc(o)}</span></label>`}).join('')+'</div>';
+}
+
+/* ---------- Accès par code ---------- */
+function viewGate(){
+  const cfg=SUPABASE_URL.includes('VOTRE-PROJET')?'<div class="mock"><strong>Configuration manquante.</strong> Renseignez SUPABASE_URL et SUPABASE_KEY au début du script (voir le guide).</div>':'';
+  app.innerHTML=cfg+`
+  <h1>Accès à la saisie</h1>
+  <p class="roleinfo">Saisissez le code remis par l’équipe : le code animateur ou le code accueil.</p>
+  <section class="card">
+    <label class="f" for="code">Code d’accès</label>
+    <input id="code" type="password" autocomplete="off" style="max-width:360px" aria-describedby="gerr">
+    <div id="gerr" class="err" ${S.gateErr?'':'hidden'}>${esc(S.gateErr)}</div>
+    <div class="row" style="margin-top:16px"><button class="primary" id="enter">Entrer</button></div>
+  </section>`;
+  const go=async()=>{
+    const c=$('#code').value.trim(); if(!c) return;
+    $('#enter').disabled=true; $('#enter').textContent='Vérification…';
+    try{
+      const r=await api('check_code',{p_code:c});
+      if(!r){S.gateErr='Code incorrect.';render();return}
+      CODE=c;ROLE=r;try{sessionStorage.setItem('hd_code',c);sessionStorage.setItem('hd_role',r)}catch(e){}
+      S.gateErr='';S.tab='anim';S.view='home';render();
+    }catch(e){S.gateErr=e.status===undefined?'Pas de connexion au serveur. Réessayez.':'Erreur : '+e.message;render()}
+  };
+  $('#enter').onclick=go; $('#code').onkeydown=e=>{if(e.key==='Enter')go()}; $('#code').focus();
+}
+
+async function loadParts(){
+  try{S.parts=await api('list_participants',{p_code:CODE});S.err=''}
+  catch(e){S.err=errText(e); if(e.status===403||e.status===401){CODE='';ROLE=''}}
+}
+async function loadAdmin(){
+  try{S.adminParts=await api('admin_list',{p_code:CODE});S.err=''}catch(e){S.err=errText(e)}
+}
+
+/* ---------- Accueil (admin) ---------- */
+function viewAccueil(){
+  if(S.adminParts===null&&!S.loading){S.loading=true;app.innerHTML='<p class="lead">Chargement…</p>';loadAdmin().then(()=>{S.loading=false;render()});return}
+  const ed=S.editPid, list=S.adminParts||[], p=ed?list.find(x=>x.numero===ed):null;
+  app.innerHTML=`
+  <h1>Accueil des participants</h1>
+  <p class="roleinfo">Page réservée à la personne qui accueille.</p>
+  ${S.err?`<div class="err" style="margin-bottom:12px">${esc(S.err)}</div>`:''}
+  ${S.toast?`<div class="toast" role="status">${esc(S.toast)}</div>`:''}
+  <section class="card">
+    <h2>${ed?'Modifier le participant '+esc(ed):'Inscrire un participant'}</h2>
+    <label class="f" for="num">Numéro de participant remis</label>
+    <div class="row"><input class="num" id="num" type="text" autocomplete="off" placeholder="P012" maxlength="5" value="${esc(ed||'')}" ${ed?'readonly':''} aria-describedby="numerr"><span class="lead" style="margin:0">P suivi de 3 chiffres</span></div>
+    <div id="numerr" class="err" hidden></div>
+    ${PROFIL.map(f=>`<div class="q"><div class="t">${f.q}${f.multi?' (plusieurs réponses possibles)':''}</div>${optHTML('pf_'+f.id,f.opts,f.multi?'checkbox':'radio',p?.profil?.[f.id]||(f.multi?[]:''))}</div>`).join('')}
+    <p class="lead" style="margin:6px 0 14px;font-size:.92rem">Les coordonnées (mail, téléphone) restent sur le formulaire de non-opposition, hors de cette base.</p>
+    <div class="row"><button class="primary" id="reg">${ed?'Enregistrer les modifications':'Inscrire ce participant'}</button>${ed?'<button class="ghost" id="cancel">Annuler</button>':''}</div>
+  </section>
+  <section class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Participants inscrits (${list.length})</h2><button class="ghost" id="refr">Actualiser</button></div>
+   ${list.length?`<div class="tw" style="margin-top:12px"><table><thead><tr><th>Numéro</th><th>Statut</th><th>Déplacement</th><th>Questionnaires</th><th></th></tr></thead><tbody>
+   ${list.map(q=>`<tr><td><strong>${esc(q.numero)}</strong></td><td>${esc(q.profil?.statut||'')}</td><td>${esc((q.profil?.depl||[]).join(', '))}</td><td>${(q.done||[]).length} sur ${QS.length}</td><td><button class="ghost" data-e="${esc(q.numero)}" style="min-height:40px;padding:0 14px">Modifier</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="lead" style="margin:12px 0 0">Aucun participant inscrit pour le moment.</p>'}
+  </section>`;
+  $('#reg').onclick=async()=>{
+    const err=$('#numerr'); const num=ed||$('#num').value.trim().toUpperCase();
+    if(!/^P\d{3}$/.test(num)){err.hidden=false;err.textContent='Numéro non valide. Exemple : P012.';$('#num').focus();return}
+    const profil={};
+    PROFIL.forEach(f=>{
+      if(f.multi){const v=[...document.querySelectorAll(`input[name=pf_${f.id}]:checked`)].map(i=>i.value);if(v.length)profil[f.id]=v}
+      else{const c=$(`input[name=pf_${f.id}]:checked`);if(c)profil[f.id]=c.value}
+    });
+    $('#reg').disabled=true;
+    try{
+      await api('admin_save_participant',{p_code:CODE,p_numero:num,p_profil:profil,p_nouveau:!ed});
+      S.toast=ed?`${num} modifié.`:`${num} est inscrit.`;S.editPid=null;S.err='';await loadAdmin();S.parts=null;render();
+    }catch(e){
+      $('#reg').disabled=false;err.hidden=false;
+      err.textContent=(e.message||'').includes('déjà')?`${num} est déjà inscrit. Utilisez « Modifier » dans la liste.`:errText(e);
+    }
+  };
+  if(ed) $('#cancel').onclick=()=>{S.editPid=null;render()};
+  $('#refr').onclick=async()=>{await loadAdmin();render()};
+  app.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{S.editPid=b.dataset.e;S.toast='';render();window.scrollTo(0,0)});
+}
+
+/* ---------- Animateur ---------- */
+function viewHome(){
+  if(S.parts===null&&!S.loading){S.loading=true;app.innerHTML='<p class="lead">Chargement des participants…</p>';loadParts().then(()=>{S.loading=false;render()});return}
+  const nums=(S.parts||[]).map(p=>p.numero); const f=S.filter.trim().toUpperCase();
+  const shown=nums.filter(n=>!f||n.includes(f));
+  const d=S.pid?doneFor(S.pid):new Set();
+  app.innerHTML=`
+  ${S.err?`<div class="err" style="margin-bottom:12px">${esc(S.err)}</div>`:''}
+  ${S.toast?`<div class="toast" role="status">${esc(S.toast)}</div>`:''}
+  <h1>Saisie d’un questionnaire</h1>
+  <p class="roleinfo">Choisissez le participant inscrit à l’accueil, puis le prototype testé.</p>
+  <section class="card">
+    <div class="row" style="justify-content:space-between"><h2 style="margin:0">1. Participant</h2><button class="ghost" id="refr">Actualiser la liste</button></div>
+    ${nums.length?`<label class="f" for="flt" style="position:absolute;left:-9999px">Filtrer les numéros</label>
+    <input id="flt" type="text" inputmode="numeric" placeholder="Filtrer, par exemple 012" value="${esc(S.filter)}" style="max-width:320px;margin:12px 0 14px" autocomplete="off">
+    <div class="chips" id="chips">${shown.map(n=>`<button class="pchip" data-p="${n}" aria-pressed="${S.pid===n}">${n}<small>${doneFor(n).size} sur ${QS.length}</small></button>`).join('')||'<p class="lead" style="grid-column:1/-1;margin:0">Aucun numéro ne correspond.</p>'}</div>`
+    :`<p class="lead" style="margin:12px 0 0">Aucun participant inscrit. La personne à l’accueil doit d’abord enregistrer le numéro.</p>`}
+  </section>
+  <section class="card">
+    <h2>2. Prototype testé ${S.pid?`pour <span style="color:var(--accent)">${esc(S.pid)}</span>`:''}</h2>
+    <div class="hubgrid">${QS.map(q=>`<button class="proto ${d.has(q.id)?'done':''}" data-q="${q.id}" ${S.pid?'':'disabled'}>
+      <span class="n">Prototype ${esc(q.num)}</span><span class="tt">${esc(q.titre)}</span>
+      ${S.pid?(d.has(q.id)?'<span class="ok">Déjà rempli</span>':'<span style="color:var(--muted);font-size:.9rem">À remplir</span>'):'<span style="color:var(--muted);font-size:.9rem">Choisir un participant</span>'}</button>`).join('')}</div>
+  </section>`;
+  const flt=$('#flt'); if(flt) flt.oninput=e=>{S.filter=e.target.value;const pos=e.target.selectionStart;viewHome();const n=$('#flt');n.focus();n.setSelectionRange(pos,pos)};
+  $('#refr').onclick=async()=>{S.parts=null;S.toast='';render()};
+  app.querySelectorAll('.pchip').forEach(b=>b.onclick=()=>{S.pid=(S.pid===b.dataset.p)?null:b.dataset.p;S.toast='';viewHome()});
+  app.querySelectorAll('.proto').forEach(b=>b.onclick=()=>{
+    const q=QS.find(x=>x.id===b.dataset.q);
+    if(doneFor(S.pid).has(q.id)) openDialog(q); else startForm(q.id);
+  });
+}
+function openDialog(q){
+  const ov=document.createElement('div'); ov.className='overlay'; ov.setAttribute('role','alertdialog'); ov.setAttribute('aria-modal','true'); ov.setAttribute('aria-labelledby','dt');
+  ov.innerHTML=`<div class="dlg"><h2 id="dt">Questionnaire déjà rempli</h2>
+  <p>Le questionnaire du prototype ${esc(q.num)} (${esc(q.titre)}) est déjà enregistré pour <strong>${esc(S.pid)}</strong>.</p>
+  <p>Voulez-vous tout de même le compléter à nouveau ? Les deux réponses seront conservées.</p>
+  <div class="row"><button class="primary" id="goon">Compléter quand même</button><button id="no">Annuler</button></div></div>`;
+  document.body.appendChild(ov);
+  const close=()=>ov.remove();
+  $('#no',ov).onclick=close; $('#goon',ov).onclick=()=>{close();startForm(q.id)};
+  ov.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+  $('#no',ov).focus();
+}
+function startForm(qid){S.qid=qid;S.ans={};S.comment='';S.aide='';S.obs='';S.jour='';S.warned=false;S.view='form';S.toast='';render();window.scrollTo(0,0)}
+
+/* ---------- Formulaire ---------- */
+function itemHTML(it){
+  const k=it.id, t=`<div class="t">${esc(it.q)}${it.max?'':''}</div>`;
+  if(it.type==='single') return `<div class="q" data-it="${k}">${t}${optHTML(k,it.opts,'radio',S.ans[k])}</div>`;
+  if(it.type==='multi'){
+    const cur=S.ans[k]||[]; const dis=it.max&&cur.length>=it.max?new Set(it.opts.filter(o=>!cur.includes(o))):null;
+    return `<div class="q" data-it="${k}">${t}${optHTML(k,it.opts,'checkbox',cur,'',dis)}</div>`}
+  if(it.type==='scale') return `<div class="q" data-it="${k}">${t}${it.rows.map((r,i)=>`<div class="scalerow"><div>${esc(r)}</div>${optHTML(k+'.'+i,it.opts,'radio',S.ans[k+'.'+i])}</div>`).join('')}</div>`;
+  if(it.type==='matrix') return `<div class="q" data-it="${k}">${t}${it.rows.map((r,i)=>`<div class="mrow"><div style="font-weight:700;margin-bottom:8px">${esc(r)}</div><div class="mcols">${it.cols.map((c,j)=>`<div><div class="c">${esc(c)}</div>${optHTML(k+'.'+i+'.'+j,it.opts,'radio',S.ans[k+'.'+i+'.'+j],'tight')}</div>`).join('')}</div></div>`).join('')}</div>`;
+  if(it.type==='timing'){
+    const H='<div class="hd">Format (trajet)</div><div class="hd">Ordre de passage</div><div class="hd">Montée (s)</div><div class="hd">Arrêt avant (s)</div><div class="hd">Descente (s)</div><div class="hd">3 arrêts trouvés ?</div>';
+    return `<div class="q" data-it="${k}">${t}<div class="timing">${H}${it.rows.map((r,i)=>{
+      const v=n=>esc(S.ans[k+'.'+i+'.'+n]||'');
+      const sel=(n,opts,lab)=>`<select data-k="${k}.${i}.${n}" aria-label="${lab}"><option value="">${lab==='Ordre de passage'?'Ordre':'—'}</option>${opts.map(o=>`<option ${S.ans[k+'.'+i+'.'+n]===o?'selected':''}>${o}</option>`).join('')}</select>`;
+      return `<div class="fmt">${esc(r)}</div>${sel('o',['1er','2e','3e'],'Ordre de passage')}
+      ${['m','a','d'].map(n=>`<input type="number" min="0" inputmode="numeric" data-k="${k}.${i}.${n}" value="${v(n)}" aria-label="${n==='m'?'Montée':n==='a'?'Arrêt avant':'Descente'} en secondes" placeholder="s">`).join('')}${sel('t',['Oui','Non'],'Trouvés')}`}).join('')}</div></div>`;
+  }
+  return '';
+}
+function requiredKeys(q){
+  const ks=[];
+  q.items.forEach(it=>{
+    if(it.optional) return;
+    if(it.type==='single') ks.push(it.id);
+    if(it.type==='scale') it.rows.forEach((r,i)=>ks.push(it.id+'.'+i));
+  });
+  return ks;
+}
+function viewForm(){
+  const q=QS.find(x=>x.id===S.qid);
+  app.innerHTML=`
+  <div class="bar"><div><strong>${esc(S.pid)}</strong> · Prototype ${esc(q.num)} · ${esc(q.titre)}<div class="prog" id="prog"></div></div>
+    <button class="ghost" id="back">Annuler</button></div>
+  <p class="lead">${esc(q.note)} Questionnaire anonyme. Il n’y a pas de bonne ou de mauvaise réponse.</p>
+  <section class="card">${q.items.map(itemHTML).join('')}</section>
+  <section class="card">
+    <h2>Commentaires libres</h2>
+    <p class="lead" style="margin-bottom:10px">Tout ce que la personne souhaite ajouter. Pense-bête : ${esc(q.hint)}</p>
+    <label class="f" for="comment" style="position:absolute;left:-9999px">Commentaires libres</label>
+    <textarea id="comment">${esc(S.comment)}</textarea>
+  </section>
+  <section class="card">
+    <h2>Réservé à l’animateur</h2>
+    <div class="q"><div class="t">Jour</div>${optHTML('jour',['20 nov.','21 nov.'],'radio',S.jour)}</div>
+    <div class="q"><div class="t">Questionnaire rempli</div>${optHTML('aide',['Seul','Avec aide'],'radio',S.aide)}</div>
+    ${(q.anim||[]).map(itemHTML).join('')}
+    <div class="q"><div class="t"><label for="obs">Observations (hésitations, difficultés, aide demandée)</label></div><textarea id="obs" style="min-height:90px">${esc(S.obs)}</textarea></div>
+  </section>
+  <div id="warn" class="err" hidden></div>
+  <div class="row"><button class="primary" id="saveBtn">Enregistrer le questionnaire</button></div>`;
+  const upd=()=>{const rk=requiredKeys(q);const n=rk.filter(k=>S.ans[k]).length;$('#prog').textContent=`${n} réponse${n>1?'s':''} sur ${rk.length} questions à cocher`};
+  const all=[...q.items,...(q.anim||[])];
+  app.querySelectorAll('input[type=radio],input[type=checkbox]').forEach(i=>i.onchange=()=>{
+    const n=i.name;
+    if(n==='aide'){S.aide=i.value;return}
+    if(n==='jour'){S.jour=i.value;return}
+    if(i.type==='checkbox'){
+      const set=new Set(S.ans[n]||[]);i.checked?set.add(i.value):set.delete(i.value);S.ans[n]=[...set];
+      const it=all.find(x=>x.id===n); if(it&&it.max){
+        app.querySelectorAll(`input[name="${n}"]`).forEach(c=>{c.disabled=S.ans[n].length>=it.max&&!c.checked});
+      }
+    } else S.ans[n]=i.value;
+    S.warned=false;$('#warn').hidden=true;$('#saveBtn').textContent='Enregistrer le questionnaire';upd();
+  });
+  app.querySelectorAll('[data-k]').forEach(i=>{i.oninput=()=>{S.ans[i.dataset.k]=i.value};i.onchange=i.oninput});
+  $('#comment').oninput=e=>S.comment=e.target.value; $('#obs').oninput=e=>S.obs=e.target.value;
+  $('#back').onclick=()=>{S.view='home';render();window.scrollTo(0,0)};
+  $('#saveBtn').onclick=async()=>{
+    const rk=requiredKeys(q);const miss=rk.filter(k=>!S.ans[k]).length;
+    if(miss&&!S.warned){S.warned=true;const w=$('#warn');w.hidden=false;w.textContent=`${miss} question${miss>1?'s':''} sans réponse. Complétez-les ou enregistrez quand même.`;$('#saveBtn').textContent='Enregistrer quand même';return}
+    const btn=$('#saveBtn'); btn.disabled=true; btn.textContent='Enregistrement…';
+    const args={p_code:CODE,p_client_id:uid(),p_participant:S.pid,p_questionnaire:q.id,p_jour:S.jour,p_rempli:S.aide,p_reponses:{...S.ans},p_commentaire:S.comment,p_observations:S.obs};
+    const qq=getQ(); qq.push({id:args.p_client_id,args}); setQ(qq);
+    const r=await flush(); const pid=S.pid;
+    S.toast=r.left?`Prototype ${q.num} gardé en attente pour ${pid} (${r.last||'à renvoyer'}). Il sera envoyé dès que possible.`:`Prototype ${q.num} enregistré pour ${pid}.`;
+    S.pid=null;S.filter='';S.view='home';S.parts=null;render();window.scrollTo(0,0);
+  };
+  upd();
+}
+
+
+/* ---------- Données (admin) : contrôle + export ---------- */
+function csvLong(ex){
+  const out=['participant;prototype;date;jour;rempli;code_question;valeur'];
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  ex.reponses.forEach(r=>{
+    const base=[r.participant,r.questionnaire,r.created_at,r.jour||'',r.rempli||''];
+    Object.entries(r.reponses||{}).forEach(([k,v])=>out.push([...base,r.questionnaire+'.'+k,q(Array.isArray(v)?v.join(' | '):v)].join(';')));
+    out.push([...base,r.questionnaire+'.commentaire',q(r.commentaire)].join(';'));
+    out.push([...base,r.questionnaire+'.observations',q(r.observations)].join(';'));
+  });
+  const pr=['participant;statut;deplacement;bus;essais;etude'];
+  ex.participants.forEach(p=>{const f=p.profil||{};pr.push([p.numero,f.statut||'',(f.depl||[]).join(' | '),f.bus||'',f.essais||'',f.etude||''].join(';'))});
+  return out.join('\n')+'\n\n'+pr.join('\n');
+}
+let EXPORT=null;
+function viewData(){
+  if(EXPORT===null&&!S.loading){S.loading=true;app.innerHTML='<p class="lead">Chargement des données…</p>';
+    api('admin_export',{p_code:CODE}).then(r=>{EXPORT=r;S.err=''}).catch(e=>{S.err=errText(e);EXPORT={participants:[],reponses:[]}}).then(()=>{S.loading=false;render()});return}
+  const ex=EXPORT; const per=QS.map(q=>({q,n:ex.reponses.filter(r=>r.questionnaire===q.id).length}));
+  app.innerHTML=`
+  <h1>Données saisies</h1>
+  ${S.err?`<div class="err" style="margin-bottom:12px">${esc(S.err)}</div>`:''}
+  <p class="lead">${ex.participants.length} participant${ex.participants.length>1?'s':''} inscrit${ex.participants.length>1?'s':''}, ${ex.reponses.length} questionnaire${ex.reponses.length>1?'s':''} enregistré${ex.reponses.length>1?'s':''}.</p>
+  <section class="card"><div class="tw"><table><thead><tr><th>Prototype</th><th>Questionnaires</th></tr></thead><tbody>
+  ${per.map(p=>`<tr><td>${esc(p.q.num)} · ${esc(p.q.titre)}</td><td>${p.n}</td></tr>`).join('')}</tbody></table></div></section>
+  <section class="card"><h2>Export pour l’analyse</h2>
+  <p class="lead" style="margin-bottom:10px">Une ligne par réponse (participant, prototype, code de la question, valeur), puis la table des participants. Séparateur point-virgule pour Excel.</p>
+  <pre class="csv" id="csv" tabindex="0">${esc(csvLong(ex))}</pre>
+  <div class="row" style="margin-top:12px"><button id="copy">Copier le CSV</button><button id="dl">Télécharger le fichier</button><button class="ghost" id="refr">Actualiser</button><span id="copied" class="ok"></span></div></section>`;
+  $('#refr').onclick=()=>{EXPORT=null;render()};
+  $('#copy').onclick=async()=>{
+    try{await navigator.clipboard.writeText(csvLong(ex));$('#copied').textContent='Copié.'}
+    catch(e){const r=document.createRange();r.selectNodeContents($('#csv'));const s=getSelection();s.removeAllRanges();s.addRange(r);$('#copied').textContent='Texte sélectionné, copiez-le avec Ctrl+C.'}
+  };
+  $('#dl').onclick=()=>{
+    const blob=new Blob(['﻿'+csvLong(ex)],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download='handideal_forum_resultats.csv';document.body.appendChild(a);a.click();a.remove();
+  };
+}
+
+function render(){
+  renderNav();
+  if(!ROLE) return viewGate();
+  if(S.tab==='accueil'&&ROLE==='admin') viewAccueil();
+  else if(S.tab==='data'&&ROLE==='admin') viewData();
+  else (S.view==='form'?viewForm:viewHome)();
+}
+addEventListener('online',async()=>{if(ROLE&&getQ().length){const r=await flush();if(r.sent){S.toast=`${r.sent} saisie(s) envoyée(s) automatiquement.`;if(S.view!=='form'){S.parts=null;render()}}}});
+if(!SUPABASE_URL.includes('supabase.co')||SUPABASE_URL.includes('VOTRE-PROJET')) document.addEventListener('DOMContentLoaded',()=>{});
+render();
+
+</script>
+</body>
+</html>
