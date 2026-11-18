@@ -120,6 +120,7 @@ pre.csv{background:var(--bg);border:2px solid var(--line);border-radius:8px;padd
 </header>
 <main id="app" aria-live="polite"></main>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 /* ---------- Questionnaires (alignés sur les versions Word du 18 nov.) ---------- */
 const OUI3=['Oui','Un peu','Non'], OPN=['Oui','Peut-être','Non'];
@@ -211,8 +212,8 @@ const PROFIL=[
 
 
 /* ---------- Configuration Supabase (à renseigner, voir le guide) ---------- */
-const SUPABASE_URL='https://crnbixqyjzgmageheizt.supabase.co';
-const SUPABASE_KEY='sb_publishable_fvSQOvj33AVlCgFcypuXJA_ZCFYbteR';
+const SUPABASE_URL='https://VOTRE-PROJET.supabase.co';
+const SUPABASE_KEY='VOTRE-CLE-ANON-OU-PUBLISHABLE';
 
 /* ---------- Accès à la base (fonctions RPC, voir supabase_setup.sql) ---------- */
 let CODE='', ROLE='';
@@ -475,18 +476,65 @@ function viewForm(){
 
 
 /* ---------- Données (admin) : contrôle + export ---------- */
+const pad=n=>String(n).padStart(2,'0');
+const fmtParis=iso=>{try{return new Date(iso).toLocaleString('sv-SE',{timeZone:'Europe/Paris'}).slice(0,16)}catch(e){return iso||''}};
+/* colonnes lisibles d'un questionnaire : [{key,label,opts?}] */
+function columnsOf(q){
+  const cols=[];
+  [...q.items,...(q.anim||[])].forEach(it=>{
+    if(it.type==='single'||it.type==='multi') cols.push({key:it.id,label:it.q,kind:it.type,opts:it.opts});
+    else if(it.type==='scale') it.rows.forEach((r,i)=>cols.push({key:it.id+'.'+i,label:it.q+' – '+r,kind:'single',opts:it.opts}));
+    else if(it.type==='matrix') it.rows.forEach((r,i)=>it.cols.forEach((c,j)=>cols.push({key:it.id+'.'+i+'.'+j,label:it.q+' – '+r+' – '+c,kind:'single',opts:it.opts})));
+    else if(it.type==='timing') it.rows.forEach((r,i)=>[['o','ordre de passage'],['m','montée (s)'],['a','arrêt avant (s)'],['d','descente (s)'],['t','3 arrêts trouvés']].forEach(([k,l])=>cols.push({key:it.id+'.'+i+'.'+k,label:r+' – '+l,kind:'single'})));
+  });
+  return cols;
+}
+const val=(r,c)=>{const v=(r.reponses||{})[c.key];return Array.isArray(v)?v.join(' | '):(v??'')};
+const numOrText=v=>(v!==''&&!isNaN(v))?Number(v):v;
 function csvLong(ex){
   const out=['participant;prototype;date;jour;rempli;code_question;valeur'];
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
   ex.reponses.forEach(r=>{
-    const base=[r.participant,r.questionnaire,r.created_at,r.jour||'',r.rempli||''];
+    const base=[r.participant,r.questionnaire,fmtParis(r.created_at),r.jour||'',r.rempli||''];
     Object.entries(r.reponses||{}).forEach(([k,v])=>out.push([...base,r.questionnaire+'.'+k,q(Array.isArray(v)?v.join(' | '):v)].join(';')));
     out.push([...base,r.questionnaire+'.commentaire',q(r.commentaire)].join(';'));
     out.push([...base,r.questionnaire+'.observations',q(r.observations)].join(';'));
   });
-  const pr=['participant;statut;deplacement;bus;essais;etude'];
-  ex.participants.forEach(p=>{const f=p.profil||{};pr.push([p.numero,f.statut||'',(f.depl||[]).join(' | '),f.bus||'',f.essais||'',f.etude||''].join(';'))});
-  return out.join('\n')+'\n\n'+pr.join('\n');
+  return out.join('\n');
+}
+function buildWorkbook(ex){
+  const wb=XLSX.utils.book_new();
+  const add=(name,rows,widths)=>{const ws=XLSX.utils.aoa_to_sheet(rows);if(widths)ws['!cols']=widths.map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws,name)};
+  // Participants
+  add('Participants',[['Participant','Statut','Déplacement','Prend le bus','Essais dans le bus','Acquisitions proto 4','Questionnaires remplis'],
+    ...ex.participants.map(p=>{const f=p.profil||{};return [p.numero,f.statut||'',(f.depl||[]).join(' | '),f.bus||'',f.essais||'',f.etude||'',ex.reponses.filter(r=>r.participant===p.numero).length]})],[12,18,28,14,18,20,20]);
+  // Synthèse (effectifs par modalité)
+  const syn=[['Prototype','Question','Réponse','Effectif','% des questionnaires du prototype','Nb de questionnaires']];
+  QS.forEach(q=>{
+    const rs=ex.reponses.filter(r=>r.questionnaire===q.id); if(!rs.length) return;
+    columnsOf(q).forEach(c=>{
+      if(!c.opts) return;
+      c.opts.forEach(o=>{
+        const n=rs.filter(r=>{const v=(r.reponses||{})[c.key];return Array.isArray(v)?v.includes(o):v===o}).length;
+        syn.push(['Proto '+q.num+' – '+q.titre,c.label,o,n,Math.round(1000*n/rs.length)/1000,rs.length]);
+      });
+    });
+  });
+  add('Synthèse',syn,[34,70,28,10,20,16]);
+  // Un onglet par prototype (une ligne par questionnaire)
+  QS.forEach(q=>{
+    const cols=columnsOf(q), rs=ex.reponses.filter(r=>r.questionnaire===q.id);
+    const head=['Participant','Date','Jour','Rempli',...cols.map(c=>c.label),'Commentaires libres','Observations animateur'];
+    const rows=rs.map(r=>[r.participant,fmtParis(r.created_at),r.jour||'',r.rempli||'',...cols.map(c=>numOrText(val(r,c))),r.commentaire||'',r.observations||'']);
+    add('Proto '+q.num,[head,...rows],[12,16,9,10,...cols.map(()=>24),50,40]);
+  });
+  // Format long (tableaux croisés dynamiques)
+  const long=[['Participant','Prototype','Date','Jour','Rempli','Question','Réponse']];
+  ex.reponses.forEach(r=>{const q=QS.find(x=>x.id===r.questionnaire);if(!q)return;
+    columnsOf(q).forEach(c=>{const v=val(r,c);if(v!=='')long.push([r.participant,q.num,fmtParis(r.created_at),r.jour||'',r.rempli||'',c.label,numOrText(v)])});
+    if(r.commentaire) long.push([r.participant,q.num,fmtParis(r.created_at),r.jour||'',r.rempli||'','Commentaires libres',r.commentaire]);});
+  add('Format long',long,[12,10,16,9,10,70,40]);
+  return wb;
 }
 let EXPORT=null;
 function viewData(){
@@ -500,17 +548,19 @@ function viewData(){
   <section class="card"><div class="tw"><table><thead><tr><th>Prototype</th><th>Questionnaires</th></tr></thead><tbody>
   ${per.map(p=>`<tr><td>${esc(p.q.num)} · ${esc(p.q.titre)}</td><td>${p.n}</td></tr>`).join('')}</tbody></table></div></section>
   <section class="card"><h2>Export pour l’analyse</h2>
-  <p class="lead" style="margin-bottom:10px">Une ligne par réponse (participant, prototype, code de la question, valeur), puis la table des participants. Séparateur point-virgule pour Excel.</p>
-  <pre class="csv" id="csv" tabindex="0">${esc(csvLong(ex))}</pre>
-  <div class="row" style="margin-top:12px"><button id="copy">Copier le CSV</button><button id="dl">Télécharger le fichier</button><button class="ghost" id="refr">Actualiser</button><span id="copied" class="ok"></span></div></section>`;
+  <p class="lead" style="margin-bottom:12px">Le classeur Excel contient : les participants, une synthèse des réponses par prototype, un onglet par prototype (une ligne par questionnaire, une colonne par question) et un onglet au format long pour les tableaux croisés dynamiques.</p>
+  <div class="row"><button class="primary" id="xl">Télécharger le classeur Excel</button><button id="csv">CSV au format long</button><button class="ghost" id="refr">Actualiser</button></div>
+  <div id="msg" class="ok" style="margin-top:10px"></div></section>`;
   $('#refr').onclick=()=>{EXPORT=null;render()};
-  $('#copy').onclick=async()=>{
-    try{await navigator.clipboard.writeText(csvLong(ex));$('#copied').textContent='Copié.'}
-    catch(e){const r=document.createRange();r.selectNodeContents($('#csv'));const s=getSelection();s.removeAllRanges();s.addRange(r);$('#copied').textContent='Texte sélectionné, copiez-le avec Ctrl+C.'}
+  $('#xl').onclick=()=>{
+    const m=$('#msg');
+    if(typeof XLSX==='undefined'){m.className='err';m.textContent='Bibliothèque Excel non chargée (connexion ?). Utilisez le CSV.';return}
+    const d=new Date(); XLSX.writeFile(buildWorkbook(ex),`handideal_forum_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.xlsx`);
+    m.className='ok';m.textContent='Fichier généré.';
   };
-  $('#dl').onclick=()=>{
+  $('#csv').onclick=()=>{
     const blob=new Blob(['﻿'+csvLong(ex)],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);a.download='handideal_forum_resultats.csv';document.body.appendChild(a);a.click();a.remove();
+    a.href=URL.createObjectURL(blob);a.download='handideal_forum_format_long.csv';document.body.appendChild(a);a.click();a.remove();
   };
 }
 
