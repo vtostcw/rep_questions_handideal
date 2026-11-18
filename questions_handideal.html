@@ -12,15 +12,21 @@
   --bg:#F3F4F7; --surface:#FFFFFF; --fg:#1D2130; --muted:#5A6073; --line:#C9CDD8;
   --primary:#2B3040; --on-primary:#FFFFFF; --accent:#B35F00; --accent-soft:#FDF1E0;
   --ok:#1F7A3D; --warn:#9A5B00; --focus:#0B5FD7;
+  --tg:#1B7F79; --tm:#A8650A; --tb:#B04535; --on-tone:#FFFFFF;
+  --k0:#2F5DA8; --k1:#7A4E9E; --k2:#4E7F4A; --k3:#A8566B; --k4:#8A6A1F; --k5:#5E6677;
   --font:'Atkinson Hyperlegible',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#13151C; --surface:#1D2029; --fg:#EEF0F6; --muted:#A5ABBD; --line:#3A3F50;
   --primary:#F28C00; --on-primary:#13151C; --accent:#F5A53A; --accent-soft:#2A2418;
+    --tg:#4FC3B9; --tm:#F0B755; --tb:#F08A7A; --on-tone:#13151C;
+  --k0:#7DA7F0; --k1:#C09BE0; --k2:#8FCB88; --k3:#E59AAE; --k4:#D9B85A; --k5:#A9B1C2;
   --ok:#5BC37D; --warn:#F5B85A; --focus:#7DB1FF; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#13151C; --surface:#1D2029; --fg:#EEF0F6; --muted:#A5ABBD; --line:#3A3F50;
   --primary:#F28C00; --on-primary:#13151C; --accent:#F5A53A; --accent-soft:#2A2418;
+    --tg:#4FC3B9; --tm:#F0B755; --tb:#F08A7A; --on-tone:#13151C;
+  --k0:#7DA7F0; --k1:#C09BE0; --k2:#8FCB88; --k3:#E59AAE; --k4:#D9B85A; --k5:#A9B1C2;
   --ok:#5BC37D; --warn:#F5B85A; --focus:#7DB1FF; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -110,6 +116,34 @@ pre.csv{background:var(--bg);border:2px solid var(--line);border-radius:8px;padd
 .pilltag{display:inline-block;border:2px solid var(--line);border-radius:999px;padding:2px 12px;font-size:.88rem;margin:2px 6px 2px 0;background:var(--bg)}
 .timing{grid-template-columns:minmax(0,1.3fr) repeat(5,minmax(0,1fr))}
 @media(max-width:560px){.timing{grid-template-columns:1fr 1fr}}
+
+.muted{color:var(--muted)}
+.sub{display:flex;gap:8px;margin:0 0 18px;flex-wrap:wrap;align-items:center}
+.fgroup{margin:0 0 16px}.fgroup .t{font-weight:700;margin:0 0 8px}
+.fchip{min-height:42px;padding:4px 14px;border:2px solid var(--line);border-radius:999px;background:var(--bg);font-weight:700;font-size:.95rem}
+.fchip[aria-pressed=true]{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.cmp{border-collapse:separate;border-spacing:0;font-size:.92rem}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;vertical-align:top;min-width:150px;background:var(--surface)}
+.cmp th{background:var(--bg)}
+.cmp th:first-child,.cmp td:first-child{position:sticky;left:0;min-width:230px;max-width:300px;z-index:1;background:var(--bg);font-weight:700}
+.pill{display:inline-block;border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:.85rem;font-weight:700;color:var(--on-tone)}
+.mean{margin-top:4px;color:var(--muted);font-size:.85rem}
+.cm{margin:0 0 6px;font-size:.88rem;font-weight:400}
+.tg{background:var(--tg)}.tm{background:var(--tm)}.tb{background:var(--tb)}
+.k0{background:var(--k0)}.k1{background:var(--k1)}.k2{background:var(--k2)}.k3{background:var(--k3)}.k4{background:var(--k4)}.k5{background:var(--k5)}
+.qchart{padding:14px 0;border-top:1px solid var(--line)}.qchart:first-of-type{border-top:0}
+.qt{font-weight:700;margin:0 0 6px}
+.legend{margin:0 0 8px}
+.bar-row{display:grid;grid-template-columns:minmax(96px,170px) 1fr 70px;gap:10px;align-items:center;margin:5px 0}
+.bl{font-size:.9rem}.bl small{color:var(--muted)}
+.bm{font-size:.88rem;color:var(--muted);text-align:right}
+.stack{display:flex;height:34px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.seg{display:flex;align-items:center;justify-content:center;min-width:26px;color:var(--on-tone);font-weight:700;font-size:.85rem}
+.seg-empty{height:34px;display:flex;align-items:center;color:var(--muted);font-size:.85rem}
+.hb{height:22px;background:var(--bg);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.hbf{display:block;height:100%}
+.ov{margin:10px 0 16px}.ovl{font-weight:700;margin-bottom:4px}
+@media(max-width:560px){.bar-row{grid-template-columns:1fr 60px}.bar-row .bl{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -537,21 +571,97 @@ function buildWorkbook(ex){
   return wb;
 }
 let EXPORT=null;
+const A={sub:'export',f:{statut:[],depl:[],bus:[],jour:[],rempli:[]},parts:[],target:'overview',by:'none',view:'tableau'};
+const SCORE={'Oui':2,'Un peu':1,'Non':0,'Peut-être':1,'Moyen':1};
+const scorable=c=>c.opts&&c.opts.length===3&&c.opts.every(o=>o in SCORE);
+const TONE={'Oui':'tg','Un peu':'tm','Peut-être':'tm','Moyen':'tm','Non':'tb'};
+const toneOf=(o,i)=>TONE[o]||('k'+(i%6));
+const f1=x=>x==null?'—':x.toFixed(1).replace('.',',');
+const pc=x=>x==null?'—':Math.round(x*100)+' %';
+const NR='Non renseigné';
+
+function popRows(ex){
+  const prof=Object.fromEntries(ex.participants.map(p=>[p.numero,p.profil||{}]));
+  const f=A.f;
+  const okP=n=>{const p=prof[n]||{};
+    if(f.statut.length&&!f.statut.includes(p.statut||NR)) return false;
+    if(f.depl.length){const d=p.depl||[]; if(!(d.length?d.some(x=>f.depl.includes(x)):f.depl.includes(NR))) return false}
+    if(f.bus.length&&!f.bus.includes(p.bus||NR)) return false;
+    if(A.parts.length&&!A.parts.includes(n)) return false;
+    return true};
+  return ex.reponses.filter(r=>okP(r.participant)&&(!f.jour.length||f.jour.includes(r.jour||NR))&&(!f.rempli.length||f.rempli.includes(r.rempli||NR)))
+    .map(r=>({...r,profil:prof[r.participant]||{}}));
+}
+function groupRows(rows,by){
+  if(by==='none') return [{name:'Tous',rows}];
+  const m=new Map(); const add=(k,r)=>{if(!m.has(k))m.set(k,[]);m.get(k).push(r)};
+  rows.forEach(r=>{
+    if(by==='participant') add(r.participant,r);
+    else if(by==='statut') add(r.profil.statut||NR,r);
+    else if(by==='depl'){const d=r.profil.depl||[];(d.length?d:[NR]).forEach(x=>add(x,r))}
+    else if(by==='bus') add(r.profil.bus||NR,r);
+    else if(by==='jour') add(r.jour||NR,r);
+    else if(by==='rempli') add(r.rempli||NR,r);
+  });
+  const order={statut:PROFIL[0].opts,depl:PROFIL[1].opts,bus:PROFIL[2].opts,jour:['20 nov.','21 nov.'],rempli:['Seul','Avec aide']}[by];
+  const names=[...m.keys()].sort((a,b)=>{if(order){const ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)}return a.localeCompare(b)});
+  return names.map(n=>({name:n,rows:m.get(n)}));
+}
+function colStats(rows,c){
+  const vals=rows.map(r=>(r.reponses||{})[c.key]).filter(v=>v!==undefined&&v!==''&&!(Array.isArray(v)&&!v.length));
+  const counts={}; (c.opts||[]).forEach(o=>counts[o]=0);
+  vals.forEach(v=>(Array.isArray(v)?v:[v]).forEach(x=>{counts[x]=(counts[x]||0)+1}));
+  let mean=null; if(scorable(c)){const sc=vals.filter(v=>typeof v==='string'&&v in SCORE);if(sc.length)mean=sc.reduce((s,v)=>s+SCORE[v],0)/sc.length}
+  return {n:vals.length,counts,mean,vals};
+}
+function protoMetrics(rows,q){
+  const rs=rows.filter(r=>r.questionnaire===q.id); if(!rs.length) return null;
+  const cols=columnsOf(q); let sum=0,cnt=0;
+  cols.filter(scorable).forEach(c=>{if(c.key==='usage')return;rs.forEach(r=>{const v=(r.reponses||{})[c.key];if(typeof v==='string'&&v in SCORE){sum+=SCORE[v];cnt++}})});
+  const uc=cols.find(c=>c.key==='usage'); const us=uc?colStats(rs,uc):{n:0,counts:{}};
+  return {n:rs.length,parts:new Set(rs.map(r=>r.participant)).size,score:cnt?sum/cnt:null,usage:us.n?us.counts['Oui']/us.n:null,aide:rs.filter(r=>r.rempli==='Avec aide').length/rs.length};
+}
+function cellText(rows,c){
+  const st=colStats(rows,c); if(!st.n) return '';
+  if(!c.opts){const nums=st.vals.map(Number);return nums.every(x=>!isNaN(x))&&nums.length>1?`moy. ${f1(nums.reduce((a,b)=>a+b,0)/nums.length)} (n=${nums.length})`:st.vals.join(' ; ')}
+  if(st.n===1) return st.vals.map(v=>Array.isArray(v)?v.join(' | '):v).join('');
+  return c.opts.filter(o=>st.counts[o]).map(o=>`${o} ${st.counts[o]} (${Math.round(100*st.counts[o]/st.n)} %)`).join(' ; ')+(st.mean!=null?` ; score ${f1(st.mean)}/2`:'');
+}
+function cellHTML(rows,c){
+  const st=colStats(rows,c); if(!st.n) return '<span class="muted">—</span>';
+  if(!c.opts) return esc(cellText(rows,c));
+  if(st.n===1){const v=st.vals[0];return (Array.isArray(v)?v:[v]).map(x=>`<span class="pill ${toneOf(x,c.opts.indexOf(x))}">${esc(x)}</span>`).join('')}
+  return c.opts.filter(o=>st.counts[o]).map(o=>`<span class="pill ${toneOf(o,c.opts.indexOf(o))}">${esc(o)} ${st.counts[o]} (${Math.round(100*st.counts[o]/st.n)} %)</span>`).join('')+(st.mean!=null?`<div class="mean">score ${f1(st.mean)} sur 2</div>`:'');
+}
+function barHTML(rows,c){
+  const st=colStats(rows,c); if(!st.n) return '<div class="seg-empty">pas de réponse</div>';
+  return '<div class="stack" role="img" aria-label="'+esc(cellText(rows,c))+'">'+c.opts.filter(o=>st.counts[o]).map(o=>`<span class="seg ${toneOf(o,c.opts.indexOf(o))}" style="flex:${st.counts[o]}" title="${esc(o)} : ${st.counts[o]}">${st.counts[o]}</span>`).join('')+'</div>';
+}
+const BYLAB={none:'Aucune (tous ensemble)',participant:'Participant',statut:'Statut',depl:'Déplacement',bus:'Usage du bus',jour:'Jour',rempli:'Seul ou avec aide'};
+
 function viewData(){
   if(EXPORT===null&&!S.loading){S.loading=true;app.innerHTML='<p class="lead">Chargement des données…</p>';
     api('admin_export',{p_code:CODE}).then(r=>{EXPORT=r;S.err=''}).catch(e=>{S.err=errText(e);EXPORT={participants:[],reponses:[]}}).then(()=>{S.loading=false;render()});return}
-  const ex=EXPORT; const per=QS.map(q=>({q,n:ex.reponses.filter(r=>r.questionnaire===q.id).length}));
+  const ex=EXPORT;
   app.innerHTML=`
   <h1>Données saisies</h1>
   ${S.err?`<div class="err" style="margin-bottom:12px">${esc(S.err)}</div>`:''}
   <p class="lead">${ex.participants.length} participant${ex.participants.length>1?'s':''} inscrit${ex.participants.length>1?'s':''}, ${ex.reponses.length} questionnaire${ex.reponses.length>1?'s':''} enregistré${ex.reponses.length>1?'s':''}.</p>
+  <div class="sub"><button class="fchip" data-s="export" aria-pressed="${A.sub==='export'}">Export</button><button class="fchip" data-s="analyse" aria-pressed="${A.sub==='analyse'}">Analyse et comparaison</button><button class="ghost" id="refr" style="min-height:42px">Actualiser les données</button></div>
+  <div id="sub"></div>`;
+  app.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{A.sub=b.dataset.s;viewData()});
+  $('#refr').onclick=()=>{EXPORT=null;render()};
+  (A.sub==='export'?viewExport:viewAnalyse)(ex,$('#sub'));
+}
+function viewExport(ex,host){
+  const per=QS.map(q=>({q,n:ex.reponses.filter(r=>r.questionnaire===q.id).length}));
+  host.innerHTML=`
   <section class="card"><div class="tw"><table><thead><tr><th>Prototype</th><th>Questionnaires</th></tr></thead><tbody>
   ${per.map(p=>`<tr><td>${esc(p.q.num)} · ${esc(p.q.titre)}</td><td>${p.n}</td></tr>`).join('')}</tbody></table></div></section>
   <section class="card"><h2>Export pour l’analyse</h2>
   <p class="lead" style="margin-bottom:12px">Le classeur Excel contient : les participants, une synthèse des réponses par prototype, un onglet par prototype (une ligne par questionnaire, une colonne par question) et un onglet au format long pour les tableaux croisés dynamiques.</p>
-  <div class="row"><button class="primary" id="xl">Télécharger le classeur Excel</button><button id="csv">CSV au format long</button><button class="ghost" id="refr">Actualiser</button></div>
+  <div class="row"><button class="primary" id="xl">Télécharger le classeur Excel</button><button id="csv">CSV au format long</button></div>
   <div id="msg" class="ok" style="margin-top:10px"></div></section>`;
-  $('#refr').onclick=()=>{EXPORT=null;render()};
   $('#xl').onclick=()=>{
     const m=$('#msg');
     if(typeof XLSX==='undefined'){m.className='err';m.textContent='Bibliothèque Excel non chargée (connexion ?). Utilisez le CSV.';return}
@@ -562,6 +672,115 @@ function viewData(){
     const blob=new Blob(['﻿'+csvLong(ex)],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);a.download='handideal_forum_format_long.csv';document.body.appendChild(a);a.click();a.remove();
   };
+}
+
+/* ---------- Analyse et comparaison ---------- */
+function chipGroup(title,key,opts,sel){
+  return `<div class="fgroup"><div class="t">${title}</div><div class="row" style="gap:8px">${opts.map(o=>`<button class="fchip" data-f="${key}" data-v="${esc(o)}" aria-pressed="${sel.includes(o)}">${esc(o)}</button>`).join('')}</div></div>`;
+}
+function viewAnalyse(ex,host){
+  const keepY=window.scrollY;
+  const rows=popRows(ex); const nParts=new Set(rows.map(r=>r.participant)).size;
+  const protosWith=QS.filter(q=>rows.some(r=>r.questionnaire===q.id));
+  if(A.target!=='overview'&&!QS.find(q=>q.id===A.target)) A.target='overview';
+  const allParts=ex.participants.map(p=>p.numero).sort();
+  host.innerHTML=`
+  <section class="card"><h2>1. Quels participants ?</h2>
+    ${chipGroup('Statut','statut',[...PROFIL[0].opts,NR],A.f.statut)}
+    ${chipGroup('Déplacement','depl',[...PROFIL[1].opts,NR],A.f.depl)}
+    ${chipGroup('Usage du bus','bus',[...PROFIL[2].opts,NR],A.f.bus)}
+    ${chipGroup('Jour du questionnaire','jour',['20 nov.','21 nov.'],A.f.jour)}
+    ${chipGroup('Questionnaire rempli','rempli',['Seul','Avec aide'],A.f.rempli)}
+    <div class="fgroup"><div class="t">Numéros précis (facultatif, plusieurs possibles)</div>
+      <div class="chips" style="max-height:170px">${allParts.map(n=>`<button class="pchip" data-pp="${n}" aria-pressed="${A.parts.includes(n)}" style="min-height:48px">${n}</button>`).join('')||'<span class="muted">Aucun participant.</span>'}</div></div>
+    <div class="row"><button class="ghost" id="reset">Réinitialiser les filtres</button><span class="lead" style="margin:0"><strong>${nParts}</strong> participant${nParts>1?'s':''}, <strong>${rows.length}</strong> questionnaire${rows.length>1?'s':''} retenu${rows.length>1?'s':''}.</span></div>
+  </section>
+  <section class="card"><h2>2. Quoi comparer ?</h2>
+    <div class="fgroup"><div class="t">Questionnaire</div><div class="row" style="gap:8px">
+      <button class="fchip" data-t="overview" aria-pressed="${A.target==='overview'}">Vue d’ensemble (tous les prototypes)</button>
+      ${QS.map(q=>`<button class="fchip" data-t="${q.id}" aria-pressed="${A.target===q.id}">Proto ${esc(q.num)}</button>`).join('')}</div></div>
+    <div class="fgroup"><div class="t">Comparer en colonnes par</div><div class="row" style="gap:8px">
+      ${Object.entries(BYLAB).map(([k,l])=>`<button class="fchip" data-by="${k}" aria-pressed="${A.by===k}">${l}</button>`).join('')}</div>
+      ${A.by==='depl'?'<p class="muted" style="margin:6px 0 0;font-size:.9rem">Une personne utilisant plusieurs aides est comptée dans chacun de ses groupes.</p>':''}</div>
+  </section>
+  <div class="sub"><button class="fchip" data-v2="tableau" aria-pressed="${A.view==='tableau'}">Tableau côte à côte</button><button class="fchip" data-v2="graph" aria-pressed="${A.view==='graph'}">Graphiques</button><button class="fchip" data-v2="synth" aria-pressed="${A.view==='synth'}">Synthèse chiffrée</button>
+    <button class="ghost" id="xcmp" style="min-height:42px">Exporter cette comparaison (Excel)</button></div>
+  <div id="res"></div>`;
+  const rerender=()=>{viewAnalyse(ex,host);window.scrollTo(0,keepY)};
+  const toggle=(arr,v)=>{const i=arr.indexOf(v);i<0?arr.push(v):arr.splice(i,1)};
+  host.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{toggle(A.f[b.dataset.f],b.dataset.v);rerender()});
+  host.querySelectorAll('[data-pp]').forEach(b=>b.onclick=()=>{toggle(A.parts,b.dataset.pp);rerender()});
+  host.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{A.target=b.dataset.t;rerender()});
+  host.querySelectorAll('[data-by]').forEach(b=>b.onclick=()=>{A.by=b.dataset.by;rerender()});
+  host.querySelectorAll('[data-v2]').forEach(b=>b.onclick=()=>{A.view=b.dataset.v2;rerender()});
+  $('#reset').onclick=()=>{A.f={statut:[],depl:[],bus:[],jour:[],rempli:[]};A.parts=[];rerender()};
+  const groups=groupRows(rows,A.by);
+  const res=$('#res',host);
+  if(!rows.length){res.innerHTML='<section class="card"><p class="lead" style="margin:0">Aucun questionnaire ne correspond à ces filtres.</p></section>';$('#xcmp').disabled=true;return}
+  const M=A.target==='overview'?renderOverview(res,groups,rows):renderDetail(res,groups,rows,QS.find(q=>q.id===A.target));
+  $('#xcmp').onclick=()=>{
+    if(typeof XLSX==='undefined'){return}
+    const wb=XLSX.utils.book_new();
+    M.sheets.forEach(([n,aoa])=>{const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=aoa[0].map((_,i)=>({wch:i===0?46:26}));XLSX.utils.book_append_sheet(wb,ws,n)});
+    const d=new Date();XLSX.writeFile(wb,`handideal_comparaison_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.xlsx`);
+  };
+}
+function legendHTML(opts){return '<div class="legend">'+opts.map((o,i)=>`<span class="pill ${toneOf(o,i)}">${esc(o)}</span>`).join('')+'</div>'}
+const gHead=g=>`${esc(g.name)}<div class="muted" style="font-weight:400">${g.rows.length} questionnaire${g.rows.length>1?'s':''}</div>`;
+
+function renderDetail(res,groups,rows,q){
+  const cols=columnsOf(q).filter(c=>true);
+  const gs=groups.map(g=>({...g,rows:g.rows.filter(r=>r.questionnaire===q.id)})).filter(g=>g.rows.length);
+  if(!gs.length){res.innerHTML=`<section class="card"><p class="lead" style="margin:0">Aucun questionnaire du prototype ${esc(q.num)} pour cette sélection.</p></section>`;return {sheets:[['Vide',[['Aucune donnée']]]]}}
+  const title=`<h2>Prototype ${esc(q.num)} · ${esc(q.titre)}</h2>`;
+  const sheets=[];
+  const tabAOA=[['Question',...gs.map(g=>g.name+' ('+g.rows.length+')')],...cols.map(c=>[c.label,...gs.map(g=>cellText(g.rows,c))]),
+    ['Commentaires libres',...gs.map(g=>g.rows.filter(r=>r.commentaire).map(r=>r.participant+' : '+r.commentaire).join('\n'))],
+    ['Observations animateur',...gs.map(g=>g.rows.filter(r=>r.observations).map(r=>r.participant+' : '+r.observations).join('\n'))]];
+  const syn=[['Groupe','Questionnaires','Participants','% avec aide','Score moyen (0 à 2)','% « Oui » à l’usage',...cols.filter(c=>scorable(c)&&c.key!=='usage').map(c=>'Score : '+c.label)],
+    ...gs.map(g=>{const m=protoMetrics(g.rows,q);return [g.name,m.n,m.parts,pc(m.aide),f1(m.score),pc(m.usage),...cols.filter(c=>scorable(c)&&c.key!=='usage').map(c=>f1(colStats(g.rows,c).mean))]})];
+  sheets.push(['Tableau',tabAOA],['Synthèse',syn]);
+  if(A.view==='tableau'){
+    res.innerHTML=`<section class="card">${title}<div class="tw"><table class="cmp"><thead><tr><th>Question</th>${gs.map(g=>`<th>${gHead(g)}</th>`).join('')}</tr></thead><tbody>
+    ${cols.map(c=>`<tr><td>${esc(c.label)}</td>${gs.map(g=>`<td>${cellHTML(g.rows,c)}</td>`).join('')}</tr>`).join('')}
+    <tr><td>Commentaires libres</td>${gs.map(g=>`<td>${g.rows.filter(r=>r.commentaire).map(r=>`<p class="cm"><b>${esc(r.participant)}</b> ${esc(r.commentaire)}</p>`).join('')||'<span class="muted">—</span>'}</td>`).join('')}</tr>
+    <tr><td>Observations de l’animateur</td>${gs.map(g=>`<td>${g.rows.filter(r=>r.observations).map(r=>`<p class="cm"><b>${esc(r.participant)}</b> ${esc(r.observations)}</p>`).join('')||'<span class="muted">—</span>'}</td>`).join('')}</tr>
+    </tbody></table></div></section>`;
+  } else if(A.view==='graph'){
+    const chartCols=cols.filter(c=>c.opts);
+    res.innerHTML=`<section class="card">${title}<p class="lead" style="margin:0 0 12px">Chaque barre montre la répartition des réponses du groupe. Le nombre dans un segment est un effectif.</p>
+    ${chartCols.map(c=>`<div class="qchart"><div class="qt">${esc(c.label)}</div>${legendHTML(c.opts)}
+      ${gs.map(g=>{const st=colStats(g.rows,c);return `<div class="bar-row"><div class="bl">${esc(g.name)} <small>n=${st.n}</small></div>${barHTML(g.rows,c)}<div class="bm">${st.mean!=null?f1(st.mean)+' / 2':''}</div></div>`}).join('')}</div>`).join('')}</section>`;
+  } else {
+    const sc=cols.filter(c=>scorable(c)&&c.key!=='usage');
+    res.innerHTML=`<section class="card">${title}<p class="lead" style="margin:0 0 12px">Score = moyenne des réponses (Oui = 2, Un peu ou Peut-être = 1, Non = 0), sur 2.</p><div class="tw"><table class="cmp"><thead><tr><th>Groupe</th><th>Questionnaires</th><th>Participants</th><th>% avec aide</th><th>Score moyen</th><th>% « Oui » à l’usage</th>${sc.map(c=>`<th title="${esc(c.label)}">${esc(c.label.split(' – ').pop())}</th>`).join('')}</tr></thead><tbody>
+    ${gs.map(g=>{const m=protoMetrics(g.rows,q);return `<tr><td>${esc(g.name)}</td><td>${m.n}</td><td>${m.parts}</td><td>${pc(m.aide)}</td><td><strong>${f1(m.score)}</strong></td><td>${pc(m.usage)}</td>${sc.map(c=>`<td>${f1(colStats(g.rows,c).mean)}</td>`).join('')}</tr>`}).join('')}</tbody></table></div></section>`;
+  }
+  return {sheets};
+}
+function renderOverview(res,groups,rows){
+  const protos=QS.filter(q=>rows.some(r=>r.questionnaire===q.id));
+  const cell=(g,q)=>protoMetrics(g.rows,q);
+  const gs=groups;
+  const tabAOA=[['Prototype',...gs.map(g=>g.name)],...protos.map(q=>['Proto '+q.num+' – '+q.titre,...gs.map(g=>{const m=cell(g,q);return m?`score ${f1(m.score)}/2 ; usage Oui ${pc(m.usage)} ; n=${m.n}`:''})])];
+  const synAOA=[['Groupe','Questionnaires','Participants','% avec aide',...protos.map(q=>'Score proto '+q.num),...protos.map(q=>'% Oui usage proto '+q.num)],
+    ...gs.map(g=>[g.name,g.rows.length,new Set(g.rows.map(r=>r.participant)).size,pc(g.rows.filter(r=>r.rempli==='Avec aide').length/g.rows.length),...protos.map(q=>f1(cell(g,q)?.score)),...protos.map(q=>pc(cell(g,q)?.usage))])];
+  const title='<h2>Vue d’ensemble des prototypes</h2>';
+  if(A.view==='tableau'){
+    res.innerHTML=`<section class="card">${title}<p class="lead" style="margin:0 0 12px">Pour chaque prototype et chaque groupe : score moyen sur 2, part de « Oui » à « Utiliseriez-vous ce prototype ? » et nombre de questionnaires.</p><div class="tw"><table class="cmp"><thead><tr><th>Prototype</th>${gs.map(g=>`<th>${gHead(g)}</th>`).join('')}</tr></thead><tbody>
+    ${protos.map(q=>`<tr><td>Proto ${esc(q.num)} · ${esc(q.titre)}</td>${gs.map(g=>{const m=cell(g,q);return `<td>${m?`<strong>${f1(m.score)}</strong> / 2<div class="muted">usage Oui : ${pc(m.usage)}</div><div class="muted">n=${m.n}</div>`:'<span class="muted">—</span>'}</td>`}).join('')}</tr>`).join('')}</tbody></table></div></section>`;
+  } else if(A.view==='graph'){
+    res.innerHTML=`<section class="card">${title}
+    <div class="legend">${gs.map((g,i)=>`<span class="pill k${i%6}">${esc(g.name)}</span>`).join('')}</div>
+    <div class="qt" style="margin-top:14px">Score moyen par prototype (sur 2)</div>
+    ${protos.map(q=>`<div class="ov"><div class="ovl">Proto ${esc(q.num)} · ${esc(q.titre)}</div>${gs.map((g,i)=>{const m=cell(g,q);const v=m?.score;return `<div class="bar-row"><div class="bl"><small>${esc(g.name)}</small></div><div class="hb"><span class="hbf k${i%6}" style="width:${v==null?0:Math.round(v/2*100)}%"></span></div><div class="bm">${f1(v)}</div></div>`}).join('')}</div>`).join('')}
+    <div class="qt" style="margin-top:22px">Part de « Oui » à « Utiliseriez-vous ce prototype dans le bus ? »</div>
+    ${protos.map(q=>`<div class="ov"><div class="ovl">Proto ${esc(q.num)} · ${esc(q.titre)}</div>${gs.map((g,i)=>{const m=cell(g,q);const v=m?.usage;return `<div class="bar-row"><div class="bl"><small>${esc(g.name)}</small></div><div class="hb"><span class="hbf k${i%6}" style="width:${v==null?0:Math.round(v*100)}%"></span></div><div class="bm">${pc(v)}</div></div>`}).join('')}</div>`).join('')}</section>`;
+  } else {
+    res.innerHTML=`<section class="card">${title}<div class="tw"><table class="cmp"><thead><tr><th>Groupe</th><th>Questionnaires</th><th>Participants</th><th>% avec aide</th>${protos.map(q=>`<th>Score proto ${esc(q.num)}</th>`).join('')}${protos.map(q=>`<th>% Oui usage proto ${esc(q.num)}</th>`).join('')}</tr></thead><tbody>
+    ${gs.map(g=>`<tr><td>${esc(g.name)}</td><td>${g.rows.length}</td><td>${new Set(g.rows.map(r=>r.participant)).size}</td><td>${pc(g.rows.filter(r=>r.rempli==='Avec aide').length/g.rows.length)}</td>${protos.map(q=>`<td>${f1(cell(g,q)?.score)}</td>`).join('')}${protos.map(q=>`<td>${pc(cell(g,q)?.usage)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>`;
+  }
+  return {sheets:[['Vue d\'ensemble',tabAOA],['Synthèse',synAOA]]};
 }
 
 function render(){
