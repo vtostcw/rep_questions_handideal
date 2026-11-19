@@ -159,6 +159,11 @@ pre.csv{background:var(--bg);border:2px solid var(--line);border-radius:8px;padd
 [hidden]{display:none!important}
 .tl2{background:var(--tl2)}.tl4{background:var(--tl4)}.tn{background:var(--tn)}
 .legnum{margin:0 0 8px;font-size:.88rem;color:var(--muted)}
+.scalerow.many{grid-template-columns:1fr;gap:8px}
+.scalerow.many .opts{flex-wrap:nowrap;gap:8px}
+.scalerow.many .opt{flex:1 1 0;min-width:0}
+.scalerow.many .opt span{font-size:.95rem;padding:8px 4px;min-height:56px}
+@media(max-width:560px){.scalerow.many .opts{flex-wrap:wrap}.scalerow.many .opt{flex:1 1 30%}}
 </style>
 </head>
 <body>
@@ -501,7 +506,7 @@ function itemHTML(it){
   if(it.type==='multi'){
     const cur=S.ans[k]||[]; const dis=it.max&&cur.length>=it.max?new Set(it.opts.filter(o=>!cur.includes(o))):null;
     return `<div class="q" data-it="${k}">${t}${it.imgs?`<div class="vrow">${it.imgs.map((v,j)=>`<div class="vf" style="--vc:${VTONE[j]}"><img class="vimg" src="${VIMG[v]}" alt="Version ${v}"><span>Version ${v}</span></div>`).join('')}</div>`:''}${optHTML(k,it.opts,'checkbox',cur,'',dis)}</div>`}
-  if(it.type==='scale') return `<div class="q" data-it="${k}">${t}${it.rows.map((r,i)=>`<div class="scalerow"><div>${esc(r)}</div>${optHTML(k+'.'+i,it.opts,'radio',S.ans[k+'.'+i])}</div>`).join('')}</div>`;
+  if(it.type==='scale') return `<div class="q" data-it="${k}">${t}${it.rows.map((r,i)=>`<div class="scalerow${it.opts.length>4?' many':''}"><div>${esc(r)}</div>${optHTML(k+'.'+i,it.opts,'radio',S.ans[k+'.'+i])}</div>`).join('')}</div>`;
   if(it.type==='matrix') return `<div class="q" data-it="${k}">${t}${it.num?`<p class="legnum">${LEGTXT}</p>`:''}${it.rows.map((r,i)=>`<div class="mrow"><div style="font-weight:700;margin-bottom:8px">${esc(r)}</div><div class="mcols">${it.cols.map((c,j)=>`<div class="mc"${it.tones?` style="--vc:${it.tones[j]}"`:''}>${it.imgs?`<img class="vimg" src="${VIMG[it.imgs[j]]}" alt="Boîtier ${esc(c)}">`:''}<div class="c">${esc(c)}</div>${optHTML(k+'.'+i+'.'+j,it.opts,'radio',S.ans[k+'.'+i+'.'+j],'tight',null,it.num?LIKN:null)}</div>`).join('')}</div></div>`).join('')}</div>`;
   if(it.type==='text') return `<div class="q" data-it="${k}">${t}<input type="text" data-k="${k}" maxlength="80" value="${esc(S.ans[k]||'')}" autocomplete="off"></div>`;
   if(it.type==='timing'){
